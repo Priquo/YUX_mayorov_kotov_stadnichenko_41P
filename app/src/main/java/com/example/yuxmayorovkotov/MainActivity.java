@@ -105,6 +105,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 database.insert(DBHelper.TABLE_CONTACTS, null, contentValues);
                 UpdateTable();
+                etName.setText("");
+                etEmail.setText("");
                 break;
 
             case R.id.btnClear:
