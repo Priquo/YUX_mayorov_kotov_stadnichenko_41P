@@ -32,9 +32,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnAdd = (Button) findViewById(R.id.btnAdd);
         btnAdd.setOnClickListener(this);
 
-        btnRead = (Button) findViewById(R.id.btnRead);
-        btnRead.setOnClickListener(this);
-
         btnClear = (Button) findViewById(R.id.btnClear);
         btnClear.setOnClickListener(this);
 
@@ -97,24 +94,59 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        String name = etName.getText().toString();
-        String email = etEmail.getText().toString();
         switch (v.getId()) {
 
             case R.id.btnAdd:
                 contentValues = new ContentValues();
+                String name = etName.getText().toString();
+                String email = etEmail.getText().toString();
                 contentValues.put(DBHelper.KEY_NAME, name);
                 contentValues.put(DBHelper.KEY_MAIL, email);
 
                 database.insert(DBHelper.TABLE_CONTACTS, null, contentValues);
-                break;
-
-            case R.id.btnRead:
                 UpdateTable();
                 break;
 
             case R.id.btnClear:
                 database.delete(DBHelper.TABLE_CONTACTS, null, null);
+                TableLayout dbOutput = findViewById(R.id.dbOutput);
+                dbOutput.removeAllViews();
+                UpdateTable();
+                break;
+
+            default:
+                View outputDBRow = (View) v.getParent();
+                ViewGroup outputDB = (ViewGroup) outputDBRow.getParent();
+                outputDB.removeView(outputDBRow);
+                outputDB.invalidate();
+                database.delete(dbHelper.TABLE_CONTACTS, dbHelper.KEY_ID+" = ?", new String[] {String.valueOf(v.getId())} );
+
+                contentValues = new ContentValues();
+                Cursor cursorUpdater = database.query(DBHelper.TABLE_CONTACTS, null, null, null, null, null, null);
+                if (cursorUpdater.moveToFirst()) {
+                    int idIndex = cursorUpdater.getColumnIndex(DBHelper.KEY_ID);
+                    int nameIndex = cursorUpdater.getColumnIndex(DBHelper.KEY_NAME);
+                    int emailIndex = cursorUpdater.getColumnIndex(DBHelper.KEY_MAIL);
+                    int realID = 1;
+                    do{
+                        if (cursorUpdater.getInt(idIndex) > realID){
+                            contentValues.put(dbHelper.KEY_ID, realID);
+                            contentValues.put(dbHelper.KEY_NAME, cursorUpdater.getString(nameIndex));
+                            contentValues.put(dbHelper.KEY_MAIL, cursorUpdater.getString(emailIndex));
+                            database.replace(dbHelper.TABLE_CONTACTS, null, contentValues);
+                        }
+                        realID++;
+                    }
+                    while(cursorUpdater.moveToNext());
+                    if (cursorUpdater.moveToLast()) {
+                        if (cursorUpdater.moveToLast() && v.getId()!=realID) {
+                            database.delete(dbHelper.TABLE_CONTACTS, dbHelper.KEY_ID + " = ?", new String[]{cursorUpdater.getString(idIndex)});
+                        }
+                    }
+                    UpdateTable();
+                }
+                else
+                    Log.d("mLog","0 rows");
                 break;
         }
     }
